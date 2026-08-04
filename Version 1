@@ -1,0 +1,47 @@
+
+
+# Project Name: Flow Computing
+# Purpose: A space themed algebra game where students answer maths questions to earn points
+
+import tkinter as tk
+from tkinter import messagebox
+import random
+import os
+from fractions import Fraction
+from PIL import Image,ImageTk,UnidentifiedImageError
+
+#This gets the folder where the python file is saved.
+#I used this so the program can find the astronaut image and score file from the correct folder.
+BASE_DIR=os.path.dirname(os.path.abspath(__file__))
+
+#The window size constants I used for every page in my program.
+WINDOW_W=600
+WINDOW_H=800
+
+#The colour constants I used for my program.
+#Using colour constants made it easier for me to do the coding as I don't need to type the colour codes always where errors would be happening.
+BG_CL="#0A0A2A" #I used this colour for the background of every game window.
+CYAN="#00F5FF" #I used cyan colour for the buttons, borders and selected texts.
+WHITE="#FFFFFF" #I used white colour for the normal texts and the stars.
+DARK_CARD="#0D1B4B" #I used this colour for the game cards, buttons and the header.
+STAR_CL="#FFFFFF" #I used this colour for the small stars in the background.
+ANS_BG="#111133" #I used this darker colour for the answer entry and leaderboard rows.
+EMPTY_STAR="#444488" #I used this colour for a star that is not selected.
+WRONG_CL="#FF4466" #I used this colour for the lives and mission failed texts.
+
+#Other constants I used in the program.
+HEART="🚀" #I used the rocket emoji to show the amount of lives the player has.
+SCORES_FILE="scores.txt" #This is the text file that stores the usernames and scores.
+MAX_LIVES=3 #This is the amount of lives a player gets when the game starts.
+
+#I made these variables before while doing the program but some of it is not really needed now.
+PROGRAM_NAME="Flow Computing"
+program_kind="Math Game" #This is not used but I kept it because it does not make any problem.
+use_space_picture=True #I was going to use this for checking the picture but I checked it another way.
+
+#The font constants I used in the program so I don't have to type the fonts every time.
+FONT_TITLE=("Courier",26,"bold")
+FONT_HEAD=("Courier",18,"bold")
+FONT_BODY=("Courier",12)
+FONT_SMALL=("Courier",10)
+FONT_BTN=("Courier",14,"bold")
