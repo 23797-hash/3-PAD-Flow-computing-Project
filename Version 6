@@ -1,0 +1,265 @@
+
+
+# Project Name: Flow Computing
+# Purpose: A space themed algebra game where students answer maths questions to earn points
+
+import tkinter as tk
+from tkinter import messagebox
+import random
+import os
+from fractions import Fraction
+from PIL import Image,ImageTk,UnidentifiedImageError
+
+#This gets the folder where the python file is saved.
+#I used this so the program can find the astronaut image and score file from the correct folder.
+BASE_DIR=os.path.dirname(os.path.abspath(__file__))
+
+#The window size constants I used for every page in my program.
+WINDOW_W=600
+WINDOW_H=800
+
+#The colour constants I used for my program.
+#Using colour constants made it easier for me to do the coding as I don't need to type the colour codes always where errors would be happening.
+BG_CL="#0A0A2A" #I used this colour for the background of every game window.
+CYAN="#00F5FF" #I used cyan colour for the buttons, borders and selected texts.
+WHITE="#FFFFFF" #I used white colour for the normal texts and the stars.
+DARK_CARD="#0D1B4B" #I used this colour for the game cards, buttons and the header.
+STAR_CL="#FFFFFF" #I used this colour for the small stars in the background.
+ANS_BG="#111133" #I used this darker colour for the answer entry and leaderboard rows.
+EMPTY_STAR="#444488" #I used this colour for a star that is not selected.
+WRONG_CL="#FF4466" #I used this colour for the lives and mission failed texts.
+
+#Other constants I used in the program.
+HEART="🚀" #I used the rocket emoji to show the amount of lives the player has.
+SCORES_FILE="scores.txt" #This is the text file that stores the usernames and scores.
+MAX_LIVES=3 #This is the amount of lives a player gets when the game starts.
+
+#I made these variables before while doing the program but some of it is not really needed now.
+PROGRAM_NAME="Flow Computing"
+program_kind="Math Game" #This is not used but I kept it because it does not make any problem.
+use_space_picture=True #I was going to use this for checking the picture but I checked it another way.
+
+#The font constants I used in the program so I don't have to type the fonts every time.
+FONT_TITLE=("Courier",26,"bold")
+FONT_HEAD=("Courier",18,"bold")
+FONT_BODY=("Courier",12)
+FONT_SMALL=("Courier",10)
+FONT_BTN=("Courier",14,"bold")
+
+'''
+This part of the program is used for the score file
+It loads the old scores and saves the new score after the game finishes
+I used a text file because only the username and the score needs to be stored
+'''
+#I used a text file to store the scores because the score only needs a username and number.
+#In this function it loads all the score records from the scores text file.
+#An empty list will be returned if there is no file or the file is empty.
+def load_data():
+    score_records=[]
+    empty_records=[] #I made this list first but I used score records list after.
+    empty_records=empty_records #This line does not change anything but it does not affect the program.
+    score_path=os.path.join(BASE_DIR,SCORES_FILE)
+    if os.path.exists(score_path): #Check if the scores file exists.
+        try:
+            with open(score_path,"r",encoding="utf-8") as file:
+                for line in file:
+                    line=line #I kept the same line value here when I was testing the file.
+                    score_parts=line.strip().rsplit(",",1)
+                    if len(score_parts)==2:
+                        try:
+                            score_records.append({
+                                "usr_name":score_parts[0],
+                                "score":int(score_parts[1])
+                            })
+                        except ValueError:
+                            pass #Ignore a record if the score is not an integer.
+        except IOError as e:
+            messagebox.showerror("Error",f"Could not load scores: {e}")
+            return[]
+
+#Sort the scores from the highest score to the lowest score and only return the top ten records.
+    score_records=score_records #This was used when I was checking the scores and it is not doing anything now.
+    return sorted(score_records,key=lambda record:record["score"],reverse=True)[:10]
+
+#This function saves the new player score into the scores text file.
+#The new record is added without deleting the old score records.
+def save_data(usr_name,player_score):
+    clean_usr_name=usr_name.replace(",","").strip() #Remove commas so it does not break the text file record.
+    player_score=int(player_score) #The score is already a integer but I changed it again to make sure.
+    save_finished=False #I used this while testing the save but it is not needed for showing anything.
+    score_path=os.path.join(BASE_DIR,SCORES_FILE)
+    try:
+        with open(score_path,"a",encoding="utf-8") as file:
+            file.write(f"{clean_usr_name},{player_score}\n")
+            save_finished=True
+    except Exception as e:
+        messagebox.showerror("Error",f"Could not save score: {e}")
+
+#This function loads the astronaut image and removes the white background from it.
+#If the image is not found it returns None so the program can use the rocket emoji instead.
+def load_image(filename,size=None):
+    filepath=os.path.join(BASE_DIR,filename)
+    try:
+        image=Image.open(filepath).convert("RGBA")
+        image=image #This is a extra line I had when I was checking the image variable.
+
+#Check every pixel and make a pixel transparent when its colour is close to white.
+        new_data=[]
+        for red,green,blue,alpha in image.getdata():
+            if red>180 and green>180 and blue>180:
+                new_data.append((0,0,0,0))
+            else:
+                new_data.append((red,green,blue,alpha))
+        image.putdata(new_data)
+
+#Resize the image into the size needed for the window.
+        if size:
+            image=image.resize(size,Image.LANCZOS)
+        return ImageTk.PhotoImage(image)
+    except (FileNotFoundError,UnidentifiedImageError) as e:
+        print(f"Error loading image '{filename}': {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected image error for '{filename}': {e}")
+        return None
+
+'''
+These question functions make different maths questions for each difficulty
+Easy has smaller numbers, medium has multiplication and division and hard has more advanced questions
+The function returns the question text and the correct answer together
+'''
+#This function generates an easy question using addition, subtraction or multiplication.
+def gene_easy_ques():
+    num_one=random.randint(1,20)
+    num_two=random.randint(1,20)
+    operation=random.choice(["+","-","×"])
+    operation_copy=operation #I made a copy before but the normal operation variable worked.
+    num_one=int(num_one) #This is already an integer but I converted it again.
+
+    if operation=="+":
+        return f"{num_one} + {num_two} = ?",num_one+num_two
+    elif operation=="-":
+#Place the bigger number first so the easy subtraction questions do not have negative answers.
+        num_one,num_two=max(num_one,num_two),min(num_one,num_two)
+        return f"{num_one} - {num_two} = ?",num_one-num_two
+    else:
+        return f"{num_one} × {num_two} = ?",num_one*num_two
+
+#This function generates a medium question using multiplication, division or squares.
+def gene_medium_ques():
+    num_one=random.randint(2,12)
+    num_two=random.randint(2,12)
+    operation=random.choice(["×","÷","²"])
+    extra_num=0 #I thought I will need this for division but I did not use it.
+
+    if operation=="×":
+        return f"{num_one} × {num_two} = ?",num_one*num_two
+    elif operation=="÷":
+#I used the multiplied number first so every division answer is a whole number.
+        return f"{num_one*num_two} ÷ {num_one} = ?",num_two
+    else:
+        return f"{num_one}² = ?",num_one*num_one
+
+#This function generates a hard question using algebra, powers, square roots, fractions or Pythagoras.
+def gene_hard_ques():
+    ques_type=random.choice(["algebra","power","sqrt","fraction","pythagoras"])
+    question_made=False #This was for checking the question before but it is not needed now.
+
+    if ques_type=="algebra":
+        x_value=random.randint(1,15)
+        add_num=random.randint(1,30)
+        multiply_num=random.randint(2,5)
+        return f"Solve for x: {multiply_num}x + {add_num} = {multiply_num*x_value+add_num}",x_value
+
+    elif ques_type=="power":
+        base_num=random.randint(2,6)
+        exponent=random.randint(2,4)
+        return f"{base_num}^{exponent} = ?",base_num**exponent
+
+    elif ques_type=="sqrt":
+        root_num=random.randint(2,12)
+        perfect_square=root_num*root_num
+        return f"√{perfect_square} = ?",root_num
+
+    elif ques_type=="fraction":
+#Create an unsimplified fraction and use Fraction to get its simplified numerator.
+        multiply_num=random.randint(2,4)
+        base_num=random.randint(1,5)
+        base_den=random.randint(base_num+1,8)
+        un_simple_num=base_num*multiply_num
+        un_simple_den=base_den*multiply_num
+        simple_fraction=Fraction(un_simple_num,un_simple_den)
+        return f"Simplify {un_simple_num}/{un_simple_den}\nEnter the simplified numerator: ?",simple_fraction.numerator
+
+    else:
+#I used Pythagorean triples so all the answers generated are whole numbers.
+        side_a,side_b,side_c=random.choice([(3,4,5),(5,12,13),(8,15,17),(7,24,25),(6,8,10)])
+        side_sele=random.choice(["a","b","c"])
+        if side_sele=="c":
+            return f"a={side_a}, b={side_b}\nFind c (a²+b²=c²): ?",side_c
+        elif side_sele=="a":
+            return f"b={side_b}, c={side_c}\nFind a (a²+b²=c²): ?",side_a
+        else:
+            return f"a={side_a}, c={side_c}\nFind b (a²+b²=c²): ?",side_b
+
+'''
+This function works like a question selector
+It checks the difficulty selected by the player and runs the matching question function
+This made it easier than writing all the question code inside the game window
+'''
+#This function checks the selected difficulty and generates the correct type of question.
+def gene_question(diff_sele):
+    if diff_sele=="Easy":
+        return gene_easy_ques()
+    elif diff_sele=="Medium":
+        return gene_medium_ques()
+    elif diff_sele=="Hard":
+        return gene_hard_ques()
+    else:
+        raise ValueError(f"Invalid difficulty level selected: '{diff_sele}'")
+
+#This function creates the cyan outlined buttons used on the game windows.
+#The button colour changes when the mouse goes over the button.
+def create_style_btn(parent,btn_text,btn_command,btn_width=18):
+    button_text_copy=btn_text #I made this copy but then I used the first button text variable.
+    style_btn=tk.Button(parent,text=btn_text,command=btn_command,font=FONT_BTN,fg=CYAN,bg=DARK_CARD,
+                        activeforeground=BG_CL,activebackground=CYAN,relief="flat",bd=0,padx=10,pady=6,
+                        width=btn_width,cursor="hand2",highlightthickness=1,highlightbackground=CYAN)
+    style_btn.bind("<Enter>",lambda event:style_btn.config(bg=CYAN,fg=BG_CL))
+    style_btn.bind("<Leave>",lambda event:style_btn.config(bg=DARK_CARD,fg=CYAN))
+    return style_btn
+
+#This function creates a star label used on the end and highscore windows.
+def create_star_lbl(parent,filled=True):
+    return tk.Label(parent,text="★",fg=CYAN if filled else EMPTY_STAR,bg=BG_CL,font=("Courier",18))
+
+'''
+I used lists for the current window and game values because lists can be changed inside different functions
+The current page is also checked so the same page does not open more than one time
+The image list keeps the images saved in memory while the program is running
+'''
+current_window=[None] #Keep track of the frame that is currently opened and helps the program to remove the old frame.
+current_page=[""] #This keeps track of the page that is currently opened and avoids opening the same page multiple times.
+image_refs=[] #This keeps the astronaut images in memory so Python does not remove them.
+old_page=[""] #This stores the old page but the program does not need to show it anywhere.
+spare_list=[] #I made this list when starting the program but it is not used now.
+unused_counter=[0] #This counter is not needed but it also does not change the game.
+
+#These lists keep the game values so the functions can change the values while the player is playing.
+player_score=[0]
+player_lives=[MAX_LIVES]
+ques_no=[0]
+correct_ans=[0]
+loading_amount=[0]
+
+#These variables keep the widgets that need to be updated from another function.
+loading_bar=None
+loading_lbl=None
+diff_lbl=None
+lives_lbl=None
+score_lbl=None
+ques_lbl=None
+ans_entry=None
+loading_img=None
+start_img=None
+game_img=None
