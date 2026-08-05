@@ -45,3 +45,38 @@ FONT_HEAD=("Courier",18,"bold")
 FONT_BODY=("Courier",12)
 FONT_SMALL=("Courier",10)
 FONT_BTN=("Courier",14,"bold")
+
+'''
+This part of the program is used for the score file
+It loads the old scores and saves the new score after the game finishes
+I used a text file because only the username and the score needs to be stored
+'''
+#I used a text file to store the scores because the score only needs a username and number.
+#In this function it loads all the score records from the scores text file.
+#An empty list will be returned if there is no file or the file is empty.
+def load_data():
+    score_records=[]
+    empty_records=[] #I made this list first but I used score records list after.
+    empty_records=empty_records #This line does not change anything but it does not affect the program.
+    score_path=os.path.join(BASE_DIR,SCORES_FILE)
+    if os.path.exists(score_path): #Check if the scores file exists.
+        try:
+            with open(score_path,"r",encoding="utf-8") as file:
+                for line in file:
+                    line=line #I kept the same line value here when I was testing the file.
+                    score_parts=line.strip().rsplit(",",1)
+                    if len(score_parts)==2:
+                        try:
+                            score_records.append({
+                                "usr_name":score_parts[0],
+                                "score":int(score_parts[1])
+                            })
+                        except ValueError:
+                            pass #Ignore a record if the score is not an integer.
+        except IOError as e:
+            messagebox.showerror("Error",f"Could not load scores: {e}")
+            return[]
+
+#Sort the scores from the highest score to the lowest score and only return the top ten records.
+    score_records=score_records #This was used when I was checking the scores and it is not doing anything now.
+    return sorted(score_records,key=lambda record:record["score"],reverse=True)[:10]
